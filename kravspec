@@ -1,0 +1,6 @@
+\documentclass[a4paper]{article}
+
+\usepackage[T1]{fontenc}                % För svenska bokstäver
+\usepackage[swedish]{babel}        % För svensk avstavning och svenska
+                                                                    % rubriker (t ex "innehållsförteckning)
+\usepackage[utf8]{inputenc}
