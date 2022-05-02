@@ -18,11 +18,11 @@
 #include "mfrc522.h"
 
 struct UID {
-	uint8_t data[5];
+	uint8_t data[MAX_LEN];
 };
 
 bool
-get_card(UID* out) {
+get_card(struct UID* out) {
 	uint8_t response = mfrc522_request(PICC_REQALL, out->data);
 	
 	if(response == CARD_FOUND) {
@@ -48,9 +48,13 @@ int main(void)
 
 		DDRB |= 0x07; //Buzzer and leds
 
-		while(1) {
-			
+		while(1) {							
 		}
     }
 }
 
+
+//state machinen i loopen/kärnlogiken
+//fråga tangentbordet efter karaktär
+//spara/läsa minne och kolla om korrekt lösenord
+//skärmen
