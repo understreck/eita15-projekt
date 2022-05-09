@@ -25,6 +25,7 @@
 
 #define LCD_WIDTH 16
 
+//-------------------------------------RFID READER-----------------------------
 struct UID {
 	uint8_t data[MAX_LEN];
 };
@@ -46,7 +47,9 @@ get_card(struct UID* out) {
 	
 	return false;
 }
+//-------------------------------------RFID READER-----------------------------
 
+//-------------------------------------LCD SCREEN------------------------------
 void
 set_dbus(uint8_t b) {
 	PORTC = (b & 0x03) | ((b << 4) & 0xC0);
@@ -70,6 +73,21 @@ lcd_command(enum LCD_COMMAND c) {
 	_delay_us(150);
 	PORTD &= ~LCD_ENABLE;
 	_delay_us(1550);
+}
+
+void
+lcd_init() {
+	DDRD |= 0xFF; //Display
+	DDRC |= 0xFF; //Display
+	
+	lcd_command(LCD_START);
+	lcd_command(LCD_CLEAR);
+	lcd_command(LCD_TWO_LINES);
+}
+
+void
+lcd_clear() {
+	lcd_command(LCD_CLEAR);
 }
 
 void
@@ -100,19 +118,18 @@ lcd_write(char const* text) {
 	lcd_write_n(text, strlen(text));
 }
 
-void
-lcd_init() {
-	DDRD |= 0xFF; //Display
-	DDRC |= 0xFF; //Display
-	
-	lcd_command(LCD_START);
-	lcd_command(LCD_CLEAR);
-	lcd_command(LCD_TWO_LINES);
+char
+hex_nibble_to_char(uint8_t a) {
+	return a > 9 ? (a - 10) + 'A' : a + '0';
 }
+
 void
-lcd_clear() {
-	lcd_command(LCD_CLEAR);
+lcd_write_hex(uint8_t a) {
+	lcd_write("0x");
+	lcd_write_c(hex_nibble_to_char(a >> 4));
+	lcd_write_c(hex_nibble_to_char(a & 0x0F));
 }
+//-------------------------------------LCD SCREEN------------------------------
 
 void
 init() {
@@ -122,14 +139,29 @@ init() {
 	mfrc522_init();
 }
 
+
 int main(void)
 {	
 	init();
+	
+	struct UID uuid;
+		
     while (1) {
-		lcd_clear();
-	    lcd_write("Jag Heter\n Anja");
-		lcd_write_c(':');
-		lcd_write_c(')');
+		bool cardFound = get_card(&uuid);
+		
+		if(cardFound) {
+			lcd_clear();
+			
+			lcd_write_hex(uuid.data[0]);
+			lcd_write("  ");
+			lcd_write_hex(uuid.data[1]);
+			lcd_write_c('\n');
+			
+			
+			lcd_write_hex(uuid.data[2]);
+			lcd_write("  ");
+			lcd_write_hex(uuid.data[3]);
+		}
 		_delay_ms(20);
     }
 }
