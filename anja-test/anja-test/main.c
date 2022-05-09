@@ -10,6 +10,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "spi.h"
 #include "mfrc522.h"
@@ -21,6 +22,8 @@
 #define LCD_CHAR_SELECT (1 << PORTD5)
 #define LCD_RW_SELECT	(1 << PORTD6)
 #define LCD_ENABLE		(1 << PORTD7)
+
+#define LCD_WIDTH 16
 
 struct UID {
 	uint8_t data[MAX_LEN];
@@ -51,30 +54,50 @@ set_dbus(uint8_t b) {
 	PORTD |= b >> 3;
 }
 
-void
-lcd_write(char const* text, uint8_t length) {
-	for(uint8_t i = 0; i < length; i++) {
-		PORTD = LCD_CHAR_SELECT | LCD_ENABLE;
-		set_dbus(text[i]);
-		_delay_ms(1);
-		PORTD &= ~LCD_ENABLE;
-		_delay_ms(1);
-	}
-}
-
 enum LCD_COMMAND {
-	LCD_INIT = 0x0E,
+	LCD_START = 0x0E,
 	LCD_CLEAR = 0x01,
-	LCD_HOME = 0x00
+	LCD_HOME = 0x00,
+	LCD_CURSOR_TOP = (1 << 7) | 0x00,
+	LCD_CURSOR_BOTTOM = (1 << 7) | 0x40,
+	LCD_TWO_LINES = 0x38
 };
 
 void
 lcd_command(enum LCD_COMMAND c) {
 	PORTD = LCD_ENABLE;
 	set_dbus(c);
-	_delay_ms(1);
+	_delay_us(150);
 	PORTD &= ~LCD_ENABLE;
-	_delay_ms(1);
+	_delay_us(1550);
+}
+
+void
+lcd_write_c(char c) {
+	if(c == '\n') {
+		lcd_command(LCD_CURSOR_BOTTOM);
+		return;
+	}
+	
+	PORTD = LCD_CHAR_SELECT | LCD_ENABLE;
+	set_dbus(c);
+	_delay_us(150);
+	PORTD &= ~LCD_ENABLE;
+	_delay_us(150);
+}
+
+void
+lcd_write_n(char const* text, uint8_t length) {
+	
+	
+	for(uint8_t i = 0; i < length; i++) {
+		lcd_write_c(text[i]);
+	}
+}
+
+void
+lcd_write(char const* text) {
+	lcd_write_n(text, strlen(text));
 }
 
 void
@@ -82,14 +105,31 @@ lcd_init() {
 	DDRD |= 0xFF; //Display
 	DDRC |= 0xFF; //Display
 	
-	lcd_command(LCD_INIT);
+	lcd_command(LCD_START);
+	lcd_command(LCD_CLEAR);
+	lcd_command(LCD_TWO_LINES);
+}
+void
+lcd_clear() {
 	lcd_command(LCD_CLEAR);
 }
-uint8_t global;
+
+void
+init() {
+	_delay_ms(50);
+	lcd_init();
+	spi_init();
+	mfrc522_init();
+}
+
 int main(void)
-{
-    /* Replace with your application code */
+{	
+	init();
     while (1) {
-		
+		lcd_clear();
+	    lcd_write("Jag Heter\n Anja");
+		lcd_write_c(':');
+		lcd_write_c(')');
+		_delay_ms(20);
     }
 }
