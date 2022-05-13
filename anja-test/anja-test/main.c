@@ -25,13 +25,16 @@
 
 #define LCD_WIDTH 16
 
+#define EEPROM_END 4096
+#define DB_MAX_ENTRIES 100
+
 //-------------------------------------RFID READER-----------------------------
-struct UID {
+struct UUID {
 	uint8_t data[MAX_LEN];
 };
 
 bool
-get_card(struct UID* out) {
+get_card(struct UUID* out) {
 	uint8_t response = mfrc522_request(PICC_REQALL, out->data);
 	
 	if(response == CARD_FOUND) {
@@ -131,6 +134,72 @@ lcd_write_hex(uint8_t a) {
 }
 //-------------------------------------LCD SCREEN------------------------------
 
+//-------------------------------------DATABASE--------------------------------
+
+void EEPROM_write(void* uiAddress, char ucData)
+{
+	/* Wait for completion of previous write */
+	while(EECR & (1<<EEPE))
+	;
+	/* Set up address and Data Registers */
+	EEAR = (uint16_t)uiAddress;
+	EEDR = ucData;
+
+	/* Write logical one to EEMPE */
+	EECR |= (1<<EEMPE);
+
+	/* Start eeprom write by setting EEPE */
+	EECR |= (1<<EEPE);
+}
+
+char EEPROM_read(void* uiAddress)
+{
+	/* Wait for completion of previous write */
+	while(EECR & (1<<EEPE))
+	;
+	/* Set up address register */
+	EEAR = (uint16_t)uiAddress;
+	/* Start eeprom read by writing EERE */
+	EECR |= (1<<EERE);
+	/* Return data from Data Register */
+	return EEDR;
+}
+
+void writeToEprom (void* eepromAdress, void* data, size_t length){
+	for(size_t i = 0; i < length; i++) {
+		EEPROM_write(eepromAdress + i, ((char*)data)[i]);
+	}
+}
+
+void readFromEprom (void* eepromAdress, void* data, size_t length){
+	for(size_t i = 0; i < length; i++) {
+		((char*)data)[i] = EEPROM_read(eepromAdress + i);
+	}
+}
+
+struct KVP {  //Key value pair
+	struct UUID uuid; //card ID
+	char pwd[4]; //password with 4 characters
+};
+
+struct Database {
+	uint8_t entries;
+	struct KVP kvps[DB_MAX_ENTRIES];
+};
+
+/*
+load
+store
+
+search
+add
+
+pack
+remove
+*/
+
+//-------------------------------------DATABASE--------------------------------
+
 void
 init() {
 	_delay_ms(50);
@@ -144,24 +213,4 @@ int main(void)
 {	
 	init();
 	
-	struct UID uuid;
-		
-    while (1) {
-		bool cardFound = get_card(&uuid);
-		
-		if(cardFound) {
-			lcd_clear();
-			
-			lcd_write_hex(uuid.data[0]);
-			lcd_write("  ");
-			lcd_write_hex(uuid.data[1]);
-			lcd_write_c('\n');
-			
-			
-			lcd_write_hex(uuid.data[2]);
-			lcd_write("  ");
-			lcd_write_hex(uuid.data[3]);
-		}
-		_delay_ms(20);
-    }
 }
