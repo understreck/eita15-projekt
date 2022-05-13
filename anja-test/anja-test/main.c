@@ -27,11 +27,21 @@
 
 #define EEPROM_END 4096
 #define DB_MAX_ENTRIES 100
+#define DB_MEM_POS 0
 
 //-------------------------------------RFID READER-----------------------------
 struct UUID {
 	uint8_t data[MAX_LEN];
 };
+
+bool
+uuid_equal(struct UUID const* lhs, struct UUID const* rhs) {
+	for(int i = 0; i < MAX_LEN; i++) {
+		if(lhs[i] != rhs[i]) return false;
+	}
+	
+	return true;
+}
 
 bool
 get_card(struct UUID* out) {
@@ -152,7 +162,7 @@ void EEPROM_write(void* uiAddress, char ucData)
 	EECR |= (1<<EEPE);
 }
 
-char EEPROM_read(void* uiAddress)
+char EEPROM_read(void const* uiAddress)
 {
 	/* Wait for completion of previous write */
 	while(EECR & (1<<EEPE))
@@ -165,13 +175,13 @@ char EEPROM_read(void* uiAddress)
 	return EEDR;
 }
 
-void writeToEprom (void* eepromAdress, void* data, size_t length){
+void writeToEprom (void* eepromAdress, void const* data, size_t length){
 	for(size_t i = 0; i < length; i++) {
 		EEPROM_write(eepromAdress + i, ((char*)data)[i]);
 	}
 }
 
-void readFromEprom (void* eepromAdress, void* data, size_t length){
+void readFromEprom (void const* eepromAdress, void* data, size_t length){
 	for(size_t i = 0; i < length; i++) {
 		((char*)data)[i] = EEPROM_read(eepromAdress + i);
 	}
@@ -187,14 +197,38 @@ struct Database {
 	struct KVP kvps[DB_MAX_ENTRIES];
 };
 
-/*
-load
-store
+void
+db_load(struct Database* database) {
+	readFromEprom(DB_MEM_POS, database, sizeof(struct Database));
+};
 
-search
+void
+db_store(struct Database const* database) {
+	writeToEprom(DB_MEM_POS, database, sizeof(struct Database));
+}
+
+struct KVP const*
+db_search(struct Database const* db, struct UUID const* uuid) {
+	for(int i = 0; i < db->entries && i < DB_MAX_ENTRIES; i++) {
+		if(uuid_equal(db->kvps[i].uuid, uuid)) {
+			return db->kvps[i];
+		}
+	}
+	
+	return NULL;
+}
+
+bool
+db_add(struct Database* db, KVP const* kvp) { //returns false if database is full
+	if(db->entries >= DB_MAX_ENTRIES) return false;
+	
+	//fortsätt
+}
+
+/*
 add
 
-pack
+rotate (algoritm, kolla in array rotation)
 remove
 */
 
@@ -213,4 +247,16 @@ int main(void)
 {	
 	init();
 	
+	struct Database db;
+	db_load(&db);
+	
+	/*
+	char const* string = "Hello World!"; //12 long
+	writeToEprom((void*)2000, string, strlen(string));
+	
+	char stringCopy[12];
+	readFromEprom((void*)2000, stringCopy, 12);
+	
+	lcd_write_n(stringCopy, 12);
+	*/
 }
