@@ -218,20 +218,21 @@ db_search(struct Database const* db, struct UUID const* uuid) {
 	return NULL;
 }
 
-/*
 bool
-db_add(struct Database* db, KVP const* kvp) { //returns false if database is full
-	if(db->entries >= DB_MAX_ENTRIES) return false;
+db_add(struct Database* db, struct KVP const* kvp) { //returns false if database is full
+	if(db->entries >= DB_MAX_ENTRIES){ return false;}
 	
-	//fortsätt
+	db->kvps[db->entries] = *kvp;
+	db->entries += 1;
+	
+	return true;
 }
-*/
-/*
-add
 
-rotate (algoritm, kolla in array rotation)
-remove
-*/
+void
+db_remove(struct Database* db, struct KVP* kvp) {
+	db->kvps[kvp - db->kvps] = db->kvps[db->entries - 1];
+	db->entries = db->entries - 1;
+}
 
 //-------------------------------------DATABASE--------------------------------
 
