@@ -37,7 +37,7 @@ struct UUID {
 bool
 uuid_equal(struct UUID const* lhs, struct UUID const* rhs) {
 	for(int i = 0; i < MAX_LEN; i++) {
-		if(lhs[i] != rhs[i]) return false;
+		if(lhs->data[i] != rhs->data[i]) return false;
 	}
 	
 	return true;
@@ -210,21 +210,22 @@ db_store(struct Database const* database) {
 struct KVP const*
 db_search(struct Database const* db, struct UUID const* uuid) {
 	for(int i = 0; i < db->entries && i < DB_MAX_ENTRIES; i++) {
-		if(uuid_equal(db->kvps[i].uuid, uuid)) {
-			return db->kvps[i];
+		if(uuid_equal(&db->kvps[i].uuid, uuid)) {
+			return &db->kvps[i];
 		}
 	}
 	
 	return NULL;
 }
 
+/*
 bool
 db_add(struct Database* db, KVP const* kvp) { //returns false if database is full
 	if(db->entries >= DB_MAX_ENTRIES) return false;
 	
 	//fortsätt
 }
-
+*/
 /*
 add
 
