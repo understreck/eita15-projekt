@@ -1,5 +1,5 @@
 /*
- * anja-test.c
+ * main.c
  *
  * Created: 2022-04-28 22:07:51
  * Author : ETF
