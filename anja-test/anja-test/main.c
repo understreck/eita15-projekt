@@ -7,6 +7,7 @@
 
 #define F_CPU 8000000 //CPU clock speed (8MHz)
 
+#include "keypad.h"
 #include "database.h"
 #include "lcd.h"
 #include "rfid-reader.h"
@@ -26,12 +27,10 @@ init() {
 	lcd_init();
 	spi_init();
 	mfrc522_init();
+	kp_init();
 }
 
 int main(void)
 {	
 	init();
-	
-	struct Database db;
-	db_load(&db);
 }
