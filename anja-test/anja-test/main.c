@@ -7,13 +7,12 @@
 
 #define F_CPU 8000000
 
+#include "rfid-reader.h"
+
 #include <avr/io.h>
 #include <util/delay.h>
 #include <stdbool.h>
 #include <string.h>
-
-#include "spi.h"
-#include "mfrc522.h"
 
 #define GREEN (1 << PORTB2)
 #define RED (1 << PORTB1)
@@ -28,39 +27,6 @@
 #define EEPROM_END 4096
 #define DB_MAX_ENTRIES 100
 #define DB_MEM_POS 0
-
-//-------------------------------------RFID READER-----------------------------
-struct UUID {
-	uint8_t data[MAX_LEN];
-};
-
-bool
-uuid_equal(struct UUID const* lhs, struct UUID const* rhs) {
-	for(int i = 0; i < MAX_LEN; i++) {
-		if(lhs->data[i] != rhs->data[i]) return false;
-	}
-	
-	return true;
-}
-
-bool
-get_card(struct UUID* out) {
-	uint8_t response = mfrc522_request(PICC_REQALL, out->data);
-	
-	if(response == CARD_FOUND) {
-		response = mfrc522_get_card_serial(out->data);
-		if(response == CARD_FOUND) {
-			uint8_t checksum = out->data[0] ^ out->data[1] ^ out->data[2] ^ out->data[3];
-					
-			if(checksum == out->data[4]) {
-				return true;
-			}
-		}
-	}
-	
-	return false;
-}
-//-------------------------------------RFID READER-----------------------------
 
 //-------------------------------------LCD SCREEN------------------------------
 void
@@ -188,7 +154,7 @@ void readFromEprom (void const* eepromAdress, void* data, size_t length){
 }
 
 struct KVP {  //Key value pair
-	struct UUID uuid; //card ID
+	struct RFID_UUID uuid; //card ID
 	char pwd[4]; //password with 4 characters
 };
 
@@ -208,9 +174,9 @@ db_store(struct Database const* database) {
 }
 
 struct KVP const*
-db_search(struct Database const* db, struct UUID const* uuid) {
+db_search(struct Database const* db, struct RFID_UUID const* uuid) {
 	for(int i = 0; i < db->entries && i < DB_MAX_ENTRIES; i++) {
-		if(uuid_equal(&db->kvps[i].uuid, uuid)) {
+		if(rfid_uuid_equal(&db->kvps[i].uuid, uuid)) {
 			return &db->kvps[i];
 		}
 	}
