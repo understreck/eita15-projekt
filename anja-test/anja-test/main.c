@@ -251,14 +251,4 @@ int main(void)
 	
 	struct Database db;
 	db_load(&db);
-	
-	/*
-	char const* string = "Hello World!"; //12 long
-	writeToEprom((void*)2000, string, strlen(string));
-	
-	char stringCopy[12];
-	readFromEprom((void*)2000, stringCopy, 12);
-	
-	lcd_write_n(stringCopy, 12);
-	*/
 }
