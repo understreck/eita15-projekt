@@ -25,13 +25,26 @@
 
 #define LCD_WIDTH 16
 
+#define EEPROM_END 4096
+#define DB_MAX_ENTRIES 100
+#define DB_MEM_POS 0
+
 //-------------------------------------RFID READER-----------------------------
-struct UID {
+struct UUID {
 	uint8_t data[MAX_LEN];
 };
 
 bool
-get_card(struct UID* out) {
+uuid_equal(struct UUID const* lhs, struct UUID const* rhs) {
+	for(int i = 0; i < MAX_LEN; i++) {
+		if(lhs->data[i] != rhs->data[i]) return false;
+	}
+	
+	return true;
+}
+
+bool
+get_card(struct UUID* out) {
 	uint8_t response = mfrc522_request(PICC_REQALL, out->data);
 	
 	if(response == CARD_FOUND) {
@@ -131,6 +144,98 @@ lcd_write_hex(uint8_t a) {
 }
 //-------------------------------------LCD SCREEN------------------------------
 
+//-------------------------------------DATABASE--------------------------------
+
+void EEPROM_write(void* uiAddress, char ucData)
+{
+	/* Wait for completion of previous write */
+	while(EECR & (1<<EEPE))
+	;
+	/* Set up address and Data Registers */
+	EEAR = (uint16_t)uiAddress;
+	EEDR = ucData;
+
+	/* Write logical one to EEMPE */
+	EECR |= (1<<EEMPE);
+
+	/* Start eeprom write by setting EEPE */
+	EECR |= (1<<EEPE);
+}
+
+char EEPROM_read(void const* uiAddress)
+{
+	/* Wait for completion of previous write */
+	while(EECR & (1<<EEPE))
+	;
+	/* Set up address register */
+	EEAR = (uint16_t)uiAddress;
+	/* Start eeprom read by writing EERE */
+	EECR |= (1<<EERE);
+	/* Return data from Data Register */
+	return EEDR;
+}
+
+void writeToEprom (void* eepromAdress, void const* data, size_t length){
+	for(size_t i = 0; i < length; i++) {
+		EEPROM_write(eepromAdress + i, ((char*)data)[i]);
+	}
+}
+
+void readFromEprom (void const* eepromAdress, void* data, size_t length){
+	for(size_t i = 0; i < length; i++) {
+		((char*)data)[i] = EEPROM_read(eepromAdress + i);
+	}
+}
+
+struct KVP {  //Key value pair
+	struct UUID uuid; //card ID
+	char pwd[4]; //password with 4 characters
+};
+
+struct Database {
+	uint8_t entries;
+	struct KVP kvps[DB_MAX_ENTRIES];
+};
+
+void
+db_load(struct Database* database) {
+	readFromEprom(DB_MEM_POS, database, sizeof(struct Database));
+};
+
+void
+db_store(struct Database const* database) {
+	writeToEprom(DB_MEM_POS, database, sizeof(struct Database));
+}
+
+struct KVP const*
+db_search(struct Database const* db, struct UUID const* uuid) {
+	for(int i = 0; i < db->entries && i < DB_MAX_ENTRIES; i++) {
+		if(uuid_equal(&db->kvps[i].uuid, uuid)) {
+			return &db->kvps[i];
+		}
+	}
+	
+	return NULL;
+}
+
+bool
+db_add(struct Database* db, struct KVP const* kvp) { //returns false if database is full
+	if(db->entries >= DB_MAX_ENTRIES){ return false;}
+	
+	db->kvps[db->entries] = *kvp;
+	db->entries += 1;
+	
+	return true;
+}
+
+void
+db_remove(struct Database* db, struct KVP* kvp) {
+	db->kvps[kvp - db->kvps] = db->kvps[db->entries - 1];
+	db->entries = db->entries - 1;
+}
+
+//-------------------------------------DATABASE--------------------------------
+
 void
 init() {
 	_delay_ms(50);
@@ -144,24 +249,6 @@ int main(void)
 {	
 	init();
 	
-	struct UID uuid;
-		
-    while (1) {
-		bool cardFound = get_card(&uuid);
-		
-		if(cardFound) {
-			lcd_clear();
-			
-			lcd_write_hex(uuid.data[0]);
-			lcd_write("  ");
-			lcd_write_hex(uuid.data[1]);
-			lcd_write_c('\n');
-			
-			
-			lcd_write_hex(uuid.data[2]);
-			lcd_write("  ");
-			lcd_write_hex(uuid.data[3]);
-		}
-		_delay_ms(20);
-    }
+	struct Database db;
+	db_load(&db);
 }
