@@ -8,8 +8,6 @@
 #ifndef KEYPAD_H
 #define KEYPAD_H
 
-#include "lcd.h"
-
 #include <avr/io.h>
 #include <util/delay.h>
 
