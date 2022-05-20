@@ -16,7 +16,7 @@
 #include <stdbool.h>
 
 #define EEPROM_END 4096
-#define DB_MAX_ENTRIES 100
+#define DB_MAX_ENTRIES 25
 #define DB_MEM_POS 0
 
 void EEPROM_write(void* uiAddress, char ucData)

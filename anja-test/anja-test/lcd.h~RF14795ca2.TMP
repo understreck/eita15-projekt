@@ -37,7 +37,7 @@ enum LCD_COMMAND {
 void
 lcd_command(enum LCD_COMMAND c) {
 	PORTD |= LCD_ENABLE;
-	PORTD &= ~(LCD_RW_SELECT | LCD_CHAR_SELECT);
+	PORTD &= ~(LCD_RW_SELECT | LCD_CHAR_SELECT)
 	lcd_set_dbus(c);
 	_delay_us(150);
 	PORTD &= ~LCD_ENABLE;
@@ -46,7 +46,7 @@ lcd_command(enum LCD_COMMAND c) {
 
 void
 lcd_init() {
-	DDRD |= 0xFE; //Display
+	DDRD |= 0xFF; //Display
 	DDRC |= 0xFF; //Display
 	
 	lcd_command(LCD_START);
@@ -66,8 +66,7 @@ lcd_write_c(char c) {
 		return;
 	}
 	
-	PORTD |= LCD_CHAR_SELECT | LCD_ENABLE;
-	PORTD &= ~LCD_RW_SELECT;
+	PORTD = LCD_CHAR_SELECT | LCD_ENABLE;
 	lcd_set_dbus(c);
 	_delay_us(150);
 	PORTD &= ~LCD_ENABLE;
